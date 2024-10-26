@@ -1,11 +1,14 @@
 "use client"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Header from "../components/transfer/Header.jsx"
 import TransferForm from "../components/transfer/TransferForm.jsx"
 import Confirmation from "../components/transfer/Confirmation.jsx"
 import { getSession } from "next-auth/react"
+import axios from "axios"
 
-export default function App() {
+export default function Page() {
+  let route = useRouter()
   let [user, setUser] = useState("")
   let [email, setEmail] = useState("");
   let [nominal, setNominal] = useState("");
@@ -34,13 +37,22 @@ export default function App() {
     if(nominal == "") {
       setBorderNominal("border-red-600");
     }
-    else if(nominal <= 10000) {
+    else if(nominal < 10000) {
       setWarn(true);
       setWarnText("Nominal transfer kurang dari Rp.10000");
     }
     else if(email != "" && email != user.email && nominal != "" && nominal >= 10000){
       setConfirm("bottom-0");
     }
+  }
+  function submitTransaction() {
+    axios.post("http://localhost:3000/api/transfer",{
+      email:user.email, 
+      receiver:email, 
+      debit:nominal, 
+      amount:parseInt(sessionStorage.getItem("amount")) - nominal
+    })
+    .then(res => route.push("/home"))
   }
   return(
     <div className="h-screen">
@@ -50,7 +62,7 @@ export default function App() {
       {
         (warn) ? <div className="bg-red-300 text-red-600 w-11/12 p-2 rounded">{warnText}</div> : ""
       }
-        <TransferForm submit={submit} email={email} emailChange={e => setEmail(e.target.value)} nominal={nominal} nominalChange={e => setNominal(e.target.value)} borderEmail={borderEmail} borderNominal={borderNominal}/>
+        <TransferForm submit={submit} email={email} emailChange={e => setEmail(e.target.value)} nominal={nominal} nominalChange={e => setNominal(e.target.value)} borderEmail={borderEmail} borderNominal={borderNominal} submitTransaction={() => submitTransaction()}/>
       </div>
     </div>
     )
